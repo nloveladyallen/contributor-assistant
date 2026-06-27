@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-27a
+// @version      2026-06-27c
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -22,6 +22,9 @@
 // @match        https://www.istockphoto.com/photo/*
 // @match        https://www.pond5.com/search?*
 // @grant        GM_addStyle
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_registerMenuCommand
 // @grant        window.onurlchange
 // ==/UserScript==
 
@@ -38,7 +41,7 @@ const CONTRIBUTOR_SELECTOR_ARTLIST = 'div[data-testid=ClipInfo] div';
 const CONTRIBUTOR_SELECTOR_DISSOLVE = '#license > div > div.medium-8.columns.video_hero__column.video_hero__asset_container > div > div > div.columns.product_details__video > div > div > div > div.medium-6.large-4.columns.product_details__column';
 const CONTRIBUTOR_SELECTOR_ISTOCK = 'body > div.content_wrapper > section > div > main > div > div > div > div > div > section.meta.Rfm5Ib9MsxDzwZ1PfoKh > section > div.adp-contributor > a';
 
-const AMERICAN_CONTRIBUTORS = [
+const DEFAULT_AMERICAN = [
     'jakerbreaker',
     'Kali9',
     'Kindel Media',
@@ -349,7 +352,7 @@ const AMERICAN_CONTRIBUTORS = [
     'shrubber',
     'lovemushroom'
 ];
-const FOREIGN_CONTRIBUTORS = [
+const DEFAULT_FOREIGN = [
     'Monkeybusiness',
     'Monkey Business',
     'Ross Hillier',
@@ -1098,6 +1101,78 @@ const FOREIGN_CONTRIBUTORS = [
     'Hero Images Inc'
 ];
 
+const STORE_KEY = 'contributorLists';
+
+// Bump this whenever the baked-in defaults change and you want to push the new
+// baseline to everyone. On load, any store seeded from an older defaults version
+// is fully replaced with the current defaults (local customizations are lost).
+const DEFAULTS_VERSION = 1;
+
+function defaultStore() {
+    return { seededVersion: DEFAULTS_VERSION, american: DEFAULT_AMERICAN, foreign: DEFAULT_FOREIGN };
+}
+
+// Loads the contributor lists from Tampermonkey's key-value store, seeding it
+// from the baked-in defaults on first run (zero-touch migration) and re-seeding
+// when a newer baseline is published.
+function loadLists() {
+    let stored = GM_getValue(STORE_KEY, null);
+
+    // First run or corrupt store: seed from defaults.
+    if (!stored || !Array.isArray(stored.american) || !Array.isArray(stored.foreign)) {
+        stored = defaultStore();
+        GM_setValue(STORE_KEY, stored);
+        return stored;
+    }
+
+    // Newer baseline published: replace the stored lists with the new defaults.
+    const seeded = stored.seededVersion ?? stored.version ?? 0;
+    if (seeded < DEFAULTS_VERSION) {
+        stored = defaultStore();
+        GM_setValue(STORE_KEY, stored);
+    }
+
+    return stored;
+}
+
+const lists = loadLists();
+
+function registerMenuCommands() {
+    GM_registerMenuCommand('Export contributor lists', () => {
+        const blob = new Blob([JSON.stringify(lists, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'contributor-lists.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+
+    GM_registerMenuCommand('Import contributor lists', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = async () => {
+            try {
+                const data = JSON.parse(await input.files[0].text());
+                if (!Array.isArray(data.american) || !Array.isArray(data.foreign)) {
+                    throw new Error('Expected { american: [...], foreign: [...] }');
+                }
+                GM_setValue(STORE_KEY, { seededVersion: DEFAULTS_VERSION, american: data.american, foreign: data.foreign });
+                alert('Imported. Reloading.');
+                location.reload();
+            } catch (e) {
+                alert('Import failed: ' + e.message);
+            }
+        };
+        input.click();
+    });
+
+    GM_registerMenuCommand('Reset lists to defaults', () => {
+        GM_setValue(STORE_KEY, defaultStore());
+        location.reload();
+    });
+}
+
 let filterInfo = {
     filters: ['showAmerican', 'showForeign', 'showUnknown'],
     observer: null
@@ -1261,13 +1336,13 @@ function getContributorStatus(contributor) {
     let status = null;
     const lowerContributor = contributor.toLowerCase();
 
-    AMERICAN_CONTRIBUTORS.forEach(usContrib => {
+    lists.american.forEach(usContrib => {
         if (lowerContributor.includes(usContrib.toLowerCase())) {
             status = 'American';
         }
     });
 
-    FOREIGN_CONTRIBUTORS.forEach(foreignContrib => {
+    lists.foreign.forEach(foreignContrib => {
         if (lowerContributor.includes(foreignContrib.toLowerCase())) {
             status = 'foreign';
         }
@@ -1453,6 +1528,8 @@ async function mainFilter() {
 
 (async function() {
     'use strict';
+
+    registerMenuCommands();
 
     const url = window.location.href;
     const pond5Regex = /https:\/\/www.pond5.com\/search?/;
