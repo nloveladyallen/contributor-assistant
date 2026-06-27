@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-27e
+// @version      2026-06-27g
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -1299,6 +1299,61 @@ function clearIcons() {
     icons.forEach(icon => icon.remove());
 }
 
+// Adds `name` to the user's list for `category` ('american' | 'foreign'),
+// removing it from the other user list first so a contributor is never in both.
+function setUserClassification(name, category) {
+    const other = category === 'american' ? 'foreign' : 'american';
+    lists.user[category] = lists.user[category].filter(n => n !== name);
+    lists.user[other] = lists.user[other].filter(n => n !== name);
+    lists.user[category].push(name);
+    GM_setValue(STORE_KEY, lists);
+}
+
+function makeIconButton(emoji, title) {
+    let span = document.createElement('span');
+    span.textContent = emoji;
+    span.classList.add('nla-icon');
+    span.style.cursor = 'pointer';
+    if (title) span.title = title;
+    return span;
+}
+
+// Renders the status emoji as a clickable control. Clicking it offers a flag /
+// stop choice; picking one stores the contributor in the matching user list and
+// confirms with a check. `name` is the contributor's display name (used as the
+// stored key), so when it's empty we fall back to a plain, non-interactive icon.
+function renderClassifier(contributorEl, name, status) {
+    if (!name) {
+        appendSpan(contributorEl, status === 'American' ? ' 🇺🇸' : status === 'foreign' ? ' 🛑' : ' ❓');
+        return;
+    }
+
+    // The icon often lives inside an <a>, so swallow the event to stop the
+    // anchor navigating (preventDefault) and any delegated router handler from
+    // firing (stopPropagation). Keeps this site-agnostic.
+    const swallow = (e, fn) => { e.preventDefault(); e.stopPropagation(); fn(); };
+
+    const emoji = status === 'American' ? ' 🇺🇸' : status === 'foreign' ? ' 🛑' : ' ❓';
+    const current = makeIconButton(emoji, 'Click to classify this contributor');
+
+    current.addEventListener('click', e => swallow(e, () => {
+        current.remove();
+        const us = makeIconButton(' 🇺🇸', 'Mark as American');
+        const stop = makeIconButton(' 🛑', 'Mark as foreign');
+        const choose = category => {
+            setUserClassification(name, category);
+            us.remove();
+            stop.remove();
+            appendSpan(contributorEl, ' ✅');
+        };
+        us.addEventListener('click', e => swallow(e, () => choose('american')));
+        stop.addEventListener('click', e => swallow(e, () => choose('foreign')));
+        contributorEl.append(us, stop);
+    }));
+
+    contributorEl.append(current);
+}
+
 async function mainAssistant() {
     const domain = window.location.href.split('/')[2];
     let site = '';
@@ -1349,26 +1404,21 @@ async function mainAssistant() {
             let property = candidate.children[0];
             if (property?.innerText === 'Contributor:') {
                 contributorEl = candidate.children[1];
-                contributor = contributorEl.innerText.toLowerCase();
+                contributor = contributorEl.innerText.trim();
             }
         }
     } else if (site === 'adobe stock') {
-        contributor = contributorEl.children[1].textContent.trim().toLowerCase();
+        contributor = contributorEl.children[1].textContent.trim();
     } else if (site === 'istock') {
-        contributor = contributorEl.children[2].textContent.trim().toLowerCase();
+        contributor = contributorEl.children[2].textContent.trim();
     } else {
-        contributor = contributorEl.children[0].textContent.trim().toLowerCase();
+        contributor = contributorEl.children[0].textContent.trim();
     }
 
     clearIcons();
     let status = getContributorStatus(contributor);
-    if (status === 'American') {
-            appendSpan(contributorEl, ' 🇺🇸');
-    } else if (status === 'foreign') {
-            appendSpan(contributorEl, ' 🛑');
-    } else {
-        appendSpan(contributorEl, ' ❓');
-    }
+    renderClassifier(contributorEl, contributor, status);
+  GM_addStyle('.nla-icon { margin-left: 10px; }');
 }
 
 function createDiv(classNames) {
