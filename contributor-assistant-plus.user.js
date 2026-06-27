@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-27c
+// @version      2026-06-27e
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -1104,71 +1104,157 @@ const DEFAULT_FOREIGN = [
 const STORE_KEY = 'contributorLists';
 
 // Bump this whenever the baked-in defaults change and you want to push the new
-// baseline to everyone. On load, any store seeded from an older defaults version
-// is fully replaced with the current defaults (local customizations are lost).
+// baseline to everyone. On load, a store seeded from an older defaults version
+// has its `default` lists replaced with the current defaults. The `user` lists
+// are never touched by this, so a user's own additions survive updates.
 const DEFAULTS_VERSION = 1;
 
-function defaultStore() {
-    return { seededVersion: DEFAULTS_VERSION, american: DEFAULT_AMERICAN, foreign: DEFAULT_FOREIGN };
+// The store holds two buckets, each with american/foreign lists:
+//   default — seeded from the baked-in lists, re-seeded on a DEFAULTS_VERSION bump
+//   user    — the user's own additions, only changed via import/clear, always wins
+function emptyLists() {
+    return { american: [], foreign: [] };
+}
+
+function defaultLists() {
+    return { american: DEFAULT_AMERICAN, foreign: DEFAULT_FOREIGN };
+}
+
+function freshStore() {
+    return { seededVersion: DEFAULTS_VERSION, default: defaultLists(), user: emptyLists() };
+}
+
+function validLists(l) {
+    return l && Array.isArray(l.american) && Array.isArray(l.foreign);
 }
 
 // Loads the contributor lists from Tampermonkey's key-value store, seeding it
-// from the baked-in defaults on first run (zero-touch migration) and re-seeding
-// when a newer baseline is published.
+// from the baked-in defaults on first run (zero-touch migration), migrating the
+// old flat shape, and re-seeding the default bucket when a newer baseline ships.
 function loadLists() {
     let stored = GM_getValue(STORE_KEY, null);
 
-    // First run or corrupt store: seed from defaults.
-    if (!stored || !Array.isArray(stored.american) || !Array.isArray(stored.foreign)) {
-        stored = defaultStore();
+    // First run or unusable store: seed defaults with empty user lists.
+    if (!stored || typeof stored !== 'object') {
+        stored = freshStore();
         GM_setValue(STORE_KEY, stored);
         return stored;
     }
 
-    // Newer baseline published: replace the stored lists with the new defaults.
-    const seeded = stored.seededVersion ?? stored.version ?? 0;
-    if (seeded < DEFAULTS_VERSION) {
-        stored = defaultStore();
-        GM_setValue(STORE_KEY, stored);
+    let changed = false;
+
+    // Migrate the old flat { american, foreign } shape into the default bucket.
+    if (Array.isArray(stored.american) && !stored.default) {
+        stored = {
+            seededVersion: stored.seededVersion ?? stored.version ?? 0,
+            default: { american: stored.american, foreign: stored.foreign },
+            user: emptyLists()
+        };
+        changed = true;
     }
 
+    // Repair either bucket if it's missing or malformed.
+    if (!validLists(stored.default)) {
+        stored.default = defaultLists();
+        changed = true;
+    }
+    if (!validLists(stored.user)) {
+        stored.user = emptyLists();
+        changed = true;
+    }
+
+    // Newer baseline published: replace the default bucket, keep the user bucket.
+    if ((stored.seededVersion ?? 0) < DEFAULTS_VERSION) {
+        stored.default = defaultLists();
+        stored.seededVersion = DEFAULTS_VERSION;
+        changed = true;
+    }
+
+    if (changed) GM_setValue(STORE_KEY, stored);
     return stored;
 }
 
 const lists = loadLists();
 
+// Resolves to the File the user picks. Uses a modal with a real file input so the
+// picker opens from a genuine user gesture (menu-command callbacks don't qualify).
+function pickJsonFile() {
+    return new Promise((resolve, reject) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147483647;display:flex;align-items:center;justify-content:center;';
+
+        const box = document.createElement('div');
+        box.style.cssText = 'background:#fff;color:#000;padding:24px;border-radius:8px;font:14px sans-serif;text-align:center;max-width:90%;';
+
+        const label = document.createElement('p');
+        label.textContent = 'Choose your contributor lists JSON file';
+        label.style.cssText = 'margin:0 0 12px';
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.style.cssText = 'display:block;margin:16px auto 0';
+
+        const close = () => overlay.remove();
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            close();
+            file ? resolve(file) : reject(new Error('No file selected'));
+        });
+        cancel.addEventListener('click', () => { close(); reject(new Error('cancelled')); });
+        overlay.addEventListener('click', e => { if (e.target === overlay) { close(); reject(new Error('cancelled')); } });
+
+        box.append(label, input, cancel);
+        overlay.append(box);
+        document.body.append(overlay);
+    });
+}
+
 function registerMenuCommands() {
-    GM_registerMenuCommand('Export contributor lists', () => {
-        const blob = new Blob([JSON.stringify(lists, null, 2)], { type: 'application/json' });
+    GM_registerMenuCommand('Export my contributor lists', () => {
+        const blob = new Blob([JSON.stringify(lists.user, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'contributor-lists.json';
+        a.download = 'my-contributor-lists.json';
         a.click();
         URL.revokeObjectURL(a.href);
     });
 
-    GM_registerMenuCommand('Import contributor lists', () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'application/json';
-        input.onchange = async () => {
-            try {
-                const data = JSON.parse(await input.files[0].text());
-                if (!Array.isArray(data.american) || !Array.isArray(data.foreign)) {
-                    throw new Error('Expected { american: [...], foreign: [...] }');
-                }
-                GM_setValue(STORE_KEY, { seededVersion: DEFAULTS_VERSION, american: data.american, foreign: data.foreign });
-                alert('Imported. Reloading.');
-                location.reload();
-            } catch (e) {
-                alert('Import failed: ' + e.message);
+    GM_registerMenuCommand('Import my contributor lists', async () => {
+        // Chrome blocks input.click() from a menu-command callback ("lack of user
+        // activation"), so show a modal and let the user click the file input
+        // directly — that real gesture is what lets the picker open.
+        let file;
+        try {
+            file = await pickJsonFile();
+        } catch {
+            return; // cancelled
+        }
+        try {
+            const data = JSON.parse(await file.text());
+            if (!validLists(data)) {
+                throw new Error('Expected { american: [...], foreign: [...] }');
             }
-        };
-        input.click();
+            lists.user = { american: data.american, foreign: data.foreign };
+            GM_setValue(STORE_KEY, lists);
+            alert('Imported. Reloading.');
+            location.reload();
+        } catch (e) {
+            alert('Import failed: ' + e.message);
+        }
     });
 
-    GM_registerMenuCommand('Reset lists to defaults', () => {
-        GM_setValue(STORE_KEY, defaultStore());
+    GM_registerMenuCommand('Clear my contributor lists', () => {
+        lists.user = emptyLists();
+        GM_setValue(STORE_KEY, lists);
+        location.reload();
+    });
+
+    GM_registerMenuCommand('Reset everything to defaults', () => {
+        GM_setValue(STORE_KEY, freshStore());
         location.reload();
     });
 }
@@ -1332,23 +1418,28 @@ function createCheckboxEnvato(id, labelText) {
     return container;
 }
 
-function getContributorStatus(contributor) {
+function statusFromLists(lowerContributor, pair) {
     let status = null;
-    const lowerContributor = contributor.toLowerCase();
-
-    lists.american.forEach(usContrib => {
+    pair.american.forEach(usContrib => {
         if (lowerContributor.includes(usContrib.toLowerCase())) {
             status = 'American';
         }
     });
-
-    lists.foreign.forEach(foreignContrib => {
+    pair.foreign.forEach(foreignContrib => {
         if (lowerContributor.includes(foreignContrib.toLowerCase())) {
             status = 'foreign';
         }
     });
+    return status;
+}
 
-    return status || 'unknown';
+function getContributorStatus(contributor) {
+    const lowerContributor = contributor.toLowerCase();
+
+    // The user's own lists always win over the defaults.
+    return statusFromLists(lowerContributor, lists.user)
+        || statusFromLists(lowerContributor, lists.default)
+        || 'unknown';
 }
 
 function getContributor(result) {
@@ -1532,7 +1623,7 @@ async function mainFilter() {
     registerMenuCommands();
 
     const url = window.location.href;
-    const pond5Regex = /https:\/\/www.pond5.com\/search?/;
+    const pond5Regex = /https:\/\/www.pond5.com\/search\?/;
     const envatoVideoRegex = /https:\/\/elements.envato.com\/stock-video\//;
     const envatoPhotoRegex = /https:\/\/elements.envato.com\/photos\//;
     if (pond5Regex.exec(url) || envatoVideoRegex.exec(url) || envatoPhotoRegex.exec(url)) {
