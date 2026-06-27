@@ -25,6 +25,9 @@
 // @grant        window.onurlchange
 // ==/UserScript==
 
+// Some clients insist on only using stock photos and footage from American contributors. This script exists to help find that, which stock sites do not always make obvious.
+
+// This is actually the selector for the parent of the element containing the contributor name.
 const CONTRIBUTOR_SELECTOR_SHUTTERSTOCK = 'div > div > div > div > div > span > p';
 const CONTRIBUTOR_SELECTOR_POND5 = '#main > div > div.u-size1of1 > div.ItemDetailV4-itemInfoWrapper.u-bgCodGray.u-colorWhite.has-organicBlueBar.js-itemDetailInfoWrapper > div > div > div > div.ItemDetailV4-itemInfoGrid > div.ItemDetailV4-itemInfoGridHeadingColumn.dsm.ItemDetailV4-itemInfoGridHeadingColumn--video.js-awCustomClick > div.ItemDetailV4-artistAndUsage > a > span.u-text14px.u-linkWhite';
 const CONTRIBUTOR_SELECTOR_ADOBE_STOCK = '#details > div > div > div.row-flex-detailspanel > div.padding-actionpanel > div > div > div > div > div.details-margin-bottom > div';
@@ -1105,7 +1108,7 @@ function arraysEqual(a, b) {
   if (a == null || b == null) return false;
   if (a.length !== b.length) return false;
 
-  for (var i = 0; i < a.length; ++i) {
+  for (let i = 0; i < a.length; ++i) {
     if (a[i] !== b[i]) return false;
   }
   return true;
@@ -1139,35 +1142,35 @@ async function mainAssistant() {
     const domain = window.location.href.split('/')[2];
     let site = '';
     let selector = '';
-    if (domain.indexOf('shutterstock.com') !== -1) {
+    if (domain.includes('shutterstock.com')) {
         site = 'shutterstock';
         selector = CONTRIBUTOR_SELECTOR_SHUTTERSTOCK;
-    } else if (domain.indexOf('pond5.com') !== -1) {
+    } else if (domain.includes('pond5.com')) {
         site = 'pond5';
         selector = CONTRIBUTOR_SELECTOR_POND5;
-    } else if (domain.indexOf('stock.adobe.com') !== -1) {
+    } else if (domain.includes('stock.adobe.com')) {
         site = 'adobe stock';
         selector = CONTRIBUTOR_SELECTOR_ADOBE_STOCK;
         await new Promise(r => setTimeout(r, 500));
-    } else if (domain.indexOf('elements.envato.com') !== -1) {
+    } else if (domain.includes('elements.envato.com')) {
         site = 'envato';
         selector = CONTRIBUTOR_SELECTOR_ENVATO;
         await new Promise(r => setTimeout(r, 500));
-    } else if (domain.indexOf('storyblocks.com') !== -1) {
+    } else if (domain.includes('storyblocks.com')) {
         site = 'storyblocks';
         selector = CONTRIBUTOR_SELECTOR_STORYBLOCKS;
-    } else if (domain.indexOf('artgrid.io') !== -1) {
+    } else if (domain.includes('artgrid.io')) {
         site = 'artgrid';
         selector = CONTRIBUTOR_SELECTOR_ARTGRID;
         await new Promise(r => setTimeout(r, 2000)); // artgrid takes forever to load
-    } else if (domain.indexOf('artlist.io') !== -1) {
+    } else if (domain.includes('artlist.io')) {
         site = 'artlist';
         selector = CONTRIBUTOR_SELECTOR_ARTLIST;
         await new Promise(r => setTimeout(r, 500));
-    } else if (domain.indexOf('dissolve.com') !== -1) {
+    } else if (domain.includes('dissolve.com')) {
         site = 'dissolve';
         selector = CONTRIBUTOR_SELECTOR_DISSOLVE;
-    } else if (domain.indexOf('istockphoto.com') !== -1) {
+    } else if (domain.includes('istockphoto.com')) {
         site = 'istock';
         selector = CONTRIBUTOR_SELECTOR_ISTOCK;
         await new Promise(r => setTimeout(r, 500));
@@ -1181,10 +1184,10 @@ async function mainAssistant() {
 
     if (site === 'dissolve') {
         let candidates = document.querySelectorAll(selector);
-        for (let i = 0; i < candidates.length; i++) {
-            let property = candidates[i].children[0];
-            if (property && property.innerText === 'Contributor:') {
-                contributorEl = candidates[i].children[1];
+        for (const candidate of candidates) {
+            let property = candidate.children[0];
+            if (property?.innerText === 'Contributor:') {
+                contributorEl = candidate.children[1];
                 contributor = contributorEl.innerText.toLowerCase();
             }
         }
@@ -1222,8 +1225,7 @@ function createDiv(classNames) {
 function createCheckboxPond5(id, labelText) {
     let container = createDiv('Checkbox');
     let cb = document.createElement('input');
-    cb.classList.add('Checkbox-input');
-    cb.classList.add('nla-checkbox');
+    cb.classList.add('Checkbox-input', 'nla-checkbox');
     cb.type = 'checkbox';
     cb.name = id;
     cb.id = id;
@@ -1241,8 +1243,7 @@ function createCheckboxPond5(id, labelText) {
 function createCheckboxEnvato(id, labelText) {
     let container = createDiv(['l0z8Gogx', 'akbOyW7N', 'J3nrzrT4', 'JO34GcLR']);
     let cb = document.createElement('input');
-    cb.classList.add('wbNGpsJc');
-    cb.classList.add('nla-checkbox');
+    cb.classList.add('wbNGpsJc', 'nla-checkbox');
     cb.type = 'checkbox';
     cb.name = id;
     cb.id = id;
@@ -1258,15 +1259,16 @@ function createCheckboxEnvato(id, labelText) {
 
 function getContributorStatus(contributor) {
     let status = null;
+    const lowerContributor = contributor.toLowerCase();
 
     AMERICAN_CONTRIBUTORS.forEach(usContrib => {
-        if (contributor.toLowerCase().indexOf(usContrib.toLowerCase()) !== -1) {
+        if (lowerContributor.includes(usContrib.toLowerCase())) {
             status = 'American';
         }
     });
 
     FOREIGN_CONTRIBUTORS.forEach(foreignContrib => {
-        if (contributor.toLowerCase().indexOf(foreignContrib.toLowerCase()) !== -1) {
+        if (lowerContributor.includes(foreignContrib.toLowerCase())) {
             status = 'foreign';
         }
     });
@@ -1276,9 +1278,9 @@ function getContributorStatus(contributor) {
 
 function getContributor(result) {
     const domain = window.location.href.split('/')[2];
-    if (domain.indexOf('pond5.com') !== -1) {
+    if (domain.includes('pond5.com')) {
         return JSON.parse(result.getAttribute('formats_data')).artistname;
-    } else if (domain.indexOf('elements.envato.com') !== -1) {
+    } else if (domain.includes('elements.envato.com')) {
         return result.lastChild.firstChild.innerText;
     } else {
         console.error('Unknown site ' + domain);
@@ -1292,9 +1294,9 @@ function filterResults(resultsSelector, filters) {
     filterInfo.filters = filters;
 
     let results = document.querySelectorAll(resultsSelector);
-    let showAmerican = filters.indexOf('showAmerican') !== -1;
-    let showForeign = filters.indexOf('showForeign') !== -1;
-    let showUnknown = filters.indexOf('showUnknown') !== -1;
+    let showAmerican = filters.includes('showAmerican');
+    let showForeign = filters.includes('showForeign');
+    let showUnknown = filters.includes('showUnknown');
 
     // If all or none checked, we do no filtering
     if ((showAmerican && showForeign && showUnknown) || !(showAmerican || showForeign || showUnknown)) {
@@ -1422,11 +1424,11 @@ async function mainFilter() {
     let filtersContainer = null;
     let resultsSelector = null;
     let filterSection = null;
-    if (domain.indexOf('pond5.com') !== -1) {
+    if (domain.includes('pond5.com')) {
         filtersContainer = document.querySelector('div.SearchFilters-filtersSection');
         resultsSelector = 'a.SearchResultDSM';
         filterSection = makePond5FilterUI();
-    } else if (domain.indexOf('elements.envato.com') !== -1) {
+    } else if (domain.includes('elements.envato.com')) {
         await new Promise(r => setTimeout(r, 500));
         filtersContainer = document.querySelector('div[data-testid=filters-sidebar] > div > div');
         resultsSelector = 'div[data-testid=video-card] > div:nth-child(2)';
@@ -1453,7 +1455,10 @@ async function mainFilter() {
     'use strict';
 
     const url = window.location.href;
-    if (url.match('https://www.pond5.com/search?') || url.match('https://elements.envato.com/stock-video/') || url.match('https://elements.envato.com/photos/')) {
+    const pond5Regex = /https:\/\/www.pond5.com\/search?/;
+    const envatoVideoRegex = /https:\/\/elements.envato.com\/stock-video\//;
+    const envatoPhotoRegex = /https:\/\/elements.envato.com\/photos\//;
+    if (pond5Regex.exec(url) || envatoVideoRegex.exec(url) || envatoPhotoRegex.exec(url)) {
         await mainFilter();
     } else {
         await mainAssistant();
