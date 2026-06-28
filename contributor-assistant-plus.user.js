@@ -1265,26 +1265,26 @@ let filterInfo = {
 };
 
 function arraysEqual(a, b) {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (a.length !== b.length) return false;
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
 
-  for (let i = 0; i < a.length; ++i) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
+    for (let i = 0; i < a.length; ++i) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
 }
 
 function debounce(func, delay) {
-  let timeoutId;
+    let timeoutId;
 
-  return function(...args) {
-    clearTimeout(timeoutId);
+    return function (...args) {
+        clearTimeout(timeoutId);
 
-    timeoutId = setTimeout(() => {
-      func.apply(this, args);
-    }, delay);
-  };
+        timeoutId = setTimeout(() => {
+            func.apply(this, args);
+        }, delay);
+    };
 }
 
 function appendSpan(parent, content) {
@@ -1418,7 +1418,7 @@ async function mainAssistant() {
     clearIcons();
     let status = getContributorStatus(contributor);
     renderClassifier(contributorEl, contributor, status);
-  GM_addStyle('.nla-icon { margin-left: 10px; }');
+    GM_addStyle('.nla-icon { margin-left: 10px; }');
 }
 
 function createDiv(classNames) {
@@ -1667,7 +1667,7 @@ async function mainFilter() {
     GM_addStyle('.nla-hidden { display: none; }');
 }
 
-(async function() {
+(async function () {
     'use strict';
 
     registerMenuCommands();
