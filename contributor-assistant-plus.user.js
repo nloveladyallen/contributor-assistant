@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-27g
+// @version      2026-06-27h
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -1513,7 +1513,7 @@ function getContributor(result) {
     if (domain.includes('pond5.com')) {
         return JSON.parse(result.getAttribute('formats_data')).artistname;
     } else if (domain.includes('elements.envato.com')) {
-        return result.lastChild.firstChild.innerText;
+        return result.lastChild.lastChild.innerText;
     } else {
         console.error('Unknown site ' + domain);
     }
