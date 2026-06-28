@@ -351,7 +351,7 @@ const DEFAULT_AMERICAN = [
     'TheSceneLab',
     'shrubber',
     'lovemushroom'
-];
+]; // end DEFAULT_AMERICAN
 const DEFAULT_FOREIGN = [
     'Monkeybusiness',
     'Monkey Business',
@@ -1099,7 +1099,7 @@ const DEFAULT_FOREIGN = [
     'MAYA LAB',
     'halfpoint',
     'Hero Images Inc'
-];
+]; // end DEFAULT_FOREIGN
 
 const STORE_KEY = 'contributorLists';
 
