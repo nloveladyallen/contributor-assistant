@@ -1414,6 +1414,15 @@ async function mainAssistant() {
     let contributorEl = document.querySelector(selector);
     let contributor = '';
 
+    ({ contributorEl, contributor } = findContributor(site, selector, contributorEl, contributor));
+
+    clearIcons();
+    let status = getContributorStatus(contributor);
+    renderClassifier(contributorEl, contributor, status);
+    GM_addStyle('.nla-icon { margin-left: 10px; }');
+}
+
+function findContributor(site, selector, contributorEl, contributor) {
     if (site === 'dissolve') {
         let candidates = document.querySelectorAll(selector);
         for (const candidate of candidates) {
@@ -1430,11 +1439,7 @@ async function mainAssistant() {
     } else {
         contributor = contributorEl.children[0].textContent.trim();
     }
-
-    clearIcons();
-    let status = getContributorStatus(contributor);
-    renderClassifier(contributorEl, contributor, status);
-    GM_addStyle('.nla-icon { margin-left: 10px; }');
+    return { contributorEl, contributor };
 }
 
 function createDiv(classNames) {
@@ -1508,7 +1513,7 @@ function getContributorStatus(contributor) {
         || 'unknown';
 }
 
-function getContributor(result) {
+function getResultContributor(result) {
     const domain = window.location.href.split('/')[2];
     if (domain.includes('pond5.com')) {
         return JSON.parse(result.getAttribute('formats_data')).artistname;
@@ -1538,7 +1543,7 @@ function filterResults(resultsSelector, filters) {
     // At this point, there are results newly excluded
 
     results.forEach(result => {
-        let contributor = getContributor(result);;
+        let contributor = getResultContributor(result);;
         let status = getContributorStatus(contributor);
         let container = result.parentElement.parentElement;
         if (status === 'American') {
