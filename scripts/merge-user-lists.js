@@ -12,8 +12,8 @@
 // the file's single-quote, 4-space-indent style. Run the result through your
 // editor / git diff before committing.
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const LISTS = [
     { key: 'american', marker: '// end DEFAULT_AMERICAN' },

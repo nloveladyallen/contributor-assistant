@@ -1318,13 +1318,29 @@ function makeIconButton(emoji, title) {
     return span;
 }
 
+const AMERICAN_EMOJI = ' 🇺🇸';
+const FOREIGN_EMOJI = ' 🛑';
+const UNKNOWN_EMOJI = ' ❓';
+const CHECK_EMOJI = ' ✅';
+
+function getEmoji(status) {
+    const lowerStatus = status?.toLowerCase();
+    if (lowerStatus === 'american') {
+        return AMERICAN_EMOJI;
+    } else if (lowerStatus === 'foreign') {
+        return FOREIGN_EMOJI;
+    } else {
+        return UNKNOWN_EMOJI;
+    }
+}
+
 // Renders the status emoji as a clickable control. Clicking it offers a flag /
 // stop choice; picking one stores the contributor in the matching user list and
 // confirms with a check. `name` is the contributor's display name (used as the
 // stored key), so when it's empty we fall back to a plain, non-interactive icon.
 function renderClassifier(contributorEl, name, status) {
     if (!name) {
-        appendSpan(contributorEl, status === 'American' ? ' 🇺🇸' : status === 'foreign' ? ' 🛑' : ' ❓');
+        appendSpan(contributorEl, getEmoji(status));
         return;
     }
 
@@ -1333,18 +1349,18 @@ function renderClassifier(contributorEl, name, status) {
     // firing (stopPropagation). Keeps this site-agnostic.
     const swallow = (e, fn) => { e.preventDefault(); e.stopPropagation(); fn(); };
 
-    const emoji = status === 'American' ? ' 🇺🇸' : status === 'foreign' ? ' 🛑' : ' ❓';
+    const emoji = getEmoji(status);
     const current = makeIconButton(emoji, 'Click to classify this contributor');
 
     current.addEventListener('click', e => swallow(e, () => {
         current.remove();
-        const us = makeIconButton(' 🇺🇸', 'Mark as American');
-        const stop = makeIconButton(' 🛑', 'Mark as foreign');
+        const us = makeIconButton(AMERICAN_EMOJI, 'Mark as American');
+        const stop = makeIconButton(FOREIGN_EMOJI, 'Mark as foreign');
         const choose = category => {
             setUserClassification(name, category);
             us.remove();
             stop.remove();
-            appendSpan(contributorEl, ' ✅');
+            appendSpan(contributorEl, CHECK_EMOJI);
         };
         us.addEventListener('click', e => swallow(e, () => choose('american')));
         stop.addEventListener('click', e => swallow(e, () => choose('foreign')));
@@ -1677,8 +1693,10 @@ async function mainFilter() {
     const envatoVideoRegex = /https:\/\/elements.envato.com\/stock-video\//;
     const envatoPhotoRegex = /https:\/\/elements.envato.com\/photos\//;
     if (pond5Regex.exec(url) || envatoVideoRegex.exec(url) || envatoPhotoRegex.exec(url)) {
+        console.log('Running filter mode');
         await mainFilter();
     } else {
+        console.log('Running assistant mode');
         await mainAssistant();
 
         if (window.onurlchange === null) {
