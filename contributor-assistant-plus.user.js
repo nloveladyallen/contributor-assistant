@@ -34,7 +34,7 @@
 const CONTRIBUTOR_SELECTOR_SHUTTERSTOCK = 'div > div > div > div > div > span > p';
 const CONTRIBUTOR_SELECTOR_POND5 = '#main > div > div.u-size1of1 > div.ItemDetailV4-itemInfoWrapper.u-bgCodGray.u-colorWhite.has-organicBlueBar.js-itemDetailInfoWrapper > div > div > div > div.ItemDetailV4-itemInfoGrid > div.ItemDetailV4-itemInfoGridHeadingColumn.dsm.ItemDetailV4-itemInfoGridHeadingColumn--video.js-awCustomClick > div.ItemDetailV4-artistAndUsage > a > span.u-text14px.u-linkWhite';
 const CONTRIBUTOR_SELECTOR_ADOBE_STOCK = '#details > div > div > div.row-flex-detailspanel > div.padding-actionpanel > div > div > div > div > div.details-margin-bottom > div';
-const CONTRIBUTOR_SELECTOR_ENVATO = '#content > div > div > div.ES35fwD6.jA4sXDPG.SHv85Oe2.NlCr4004.uedkJzta > div.ES35fwD6.SHv85Oe2.NlCr4004.uedkJzta > div > div > div > div > div > div.ES35fwD6.l38mXzx2 > div > div._l9nSumF > div > div > div.QejAgNG_.rGep5HSU > div.QejAgNG_.GaPUhC0N > span';
+const CONTRIBUTOR_SELECTOR_ENVATO = '._l9nSumF > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > span:nth-child(2)';
 const CONTRIBUTOR_SELECTOR_STORYBLOCKS = '#details-app-container > div > div > div.stockItemDetails-row > div.flex.flex-column.text-white > div.relative.flex.flex-col.flex-1.mx-4.justify-center.text-white > div.stockItemInfo-stockSpecContributor > span.stockItemInfo-stockSpecItemValue'
 const CONTRIBUTOR_SELECTOR_ARTGRID = 'body > art-root > div > mat-sidenav-container:nth-child(3) > mat-sidenav-content > art-clip-page > div.art-clip-container > div.art-clip-container--content.ng-star-inserted > art-clip-details > div > div.art-film-maker-name > div.name-details'
 const CONTRIBUTOR_SELECTOR_ARTLIST = 'div[data-testid=ClipInfo] div';
