@@ -26,6 +26,8 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @grant        window.onurlchange
+// @updateurl    https://raw.githubusercontent.com/nloveladyallen/contributor-assistant/refs/heads/master/contributor-assistant-plus.meta.js
+// @downloadurl  https://raw.githubusercontent.com/nloveladyallen/contributor-assistant/refs/heads/master/contributor-assistant-plus.user.js
 // ==/UserScript==
 
 // Some clients insist on only using stock photos and footage from American contributors. This script exists to help find that, which stock sites do not always make obvious.

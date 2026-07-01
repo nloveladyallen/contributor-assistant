@@ -26,4 +26,6 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @grant        window.onurlchange
+// @updateurl    https://raw.githubusercontent.com/nloveladyallen/contributor-assistant/refs/heads/master/contributor-assistant-plus.meta.js
+// @downloadurl  https://raw.githubusercontent.com/nloveladyallen/contributor-assistant/refs/heads/master/contributor-assistant-plus.user.js
 // ==/UserScript==
