@@ -80,7 +80,7 @@ Tampermonkey's extension menu (on any supported page) exposes these commands:
 
 The script is a single file, `contributor-assistant-plus.user.js`, with a companion
 `contributor-assistant-plus.meta.js` used for update checks. When you change the script,
-bump `@version` in both files.
+bump `@version` in both files (`scripts/bump-version.js`).
 
 Contributor names are matched against two sources: the built-in `DEFAULT_AMERICAN` /
 `DEFAULT_FOREIGN` lists and the user's personal lists (which take precedence).
