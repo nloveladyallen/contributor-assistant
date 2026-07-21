@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-28a
+// @version      2026-07-21a
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -352,7 +352,16 @@ const DEFAULT_AMERICAN = [
     'MadMac',
     'TheSceneLab',
     'shrubber',
-    'lovemushroom'
+    'lovemushroom',
+    'EdgeofReason',
+    'jhorrocks',
+    'newportcoastmedia',
+    'adisdays',
+    'shadowspeeder',
+    'KangMedia',
+    'FelipeSan',
+    'stockISSIMO',
+    'bybert',
 ]; // end DEFAULT_AMERICAN
 const DEFAULT_FOREIGN = [
     'Monkeybusiness',
@@ -1100,7 +1109,70 @@ const DEFAULT_FOREIGN = [
     'Gorodenkoff',
     'MAYA LAB',
     'halfpoint',
-    'Hero Images Inc'
+    'Hero Images Inc',
+    'Smileus',
+    'FrameFactory',
+    'WestwoodFilms',
+    'yokaew',
+    'Alex_Quad',
+    'Afterdarkness75',
+    'SnowFlame',
+    'RuslanMikaielian',
+    'voffka23',
+    'Ilya_Fedorov',
+    'divali_p',
+    'monkey_haru5',
+    'woff1966',
+    'VictorVice',
+    'djtrenerpond5',
+    'tonefotografia',
+    'IhorVesna',
+    'Stockmagical',
+    'SPY_studio',
+    'LimArtPro',
+    'verticalstock',
+    'MediaStockMasters',
+    'natalimarczella',
+    'Alex_eg',
+    'fimoyaka',
+    'nitsuki',
+    'purplevideos',
+    'emariya',
+    'glebcallfives',
+    'DiMedia',
+    'Siletskyi',
+    'joshhhab',
+    'moviego',
+    'iprano',
+    'LoveVision',
+    'DeReGe',
+    'hideko1979',
+    'helivideos',
+    'Paha_L',
+    'Digi_Dog',
+    'Johnathan001',
+    'ArtLook',
+    'RoStProduction',
+    'Yellow_Fabia',
+    'Unaihuiziphotography',
+    'pedropacheco955350',
+    'inkyreel',
+    'korotnat',
+    'moov_stock',
+    'Tsuguliev',
+    'ChayTee',
+    'serperm73',
+    'ShantiMedia',
+    'Sepia100',
+    'mmatvey',
+    'Buckies',
+    'AnnaStudioUK',
+    'Wifesun',
+    'Alex_video70',
+    'AndreyPopov',
+    'Arkadij',
+    'Stockah',
+    'reefa31',
 ]; // end DEFAULT_FOREIGN
 
 const STORE_KEY = 'contributorLists';
@@ -1109,7 +1181,7 @@ const STORE_KEY = 'contributorLists';
 // baseline to everyone. On load, a store seeded from an older defaults version
 // has its `default` lists replaced with the current defaults. The `user` lists
 // are never touched by this, so a user's own additions survive updates.
-const DEFAULTS_VERSION = 1;
+const DEFAULTS_VERSION = 2;
 
 // The store holds two buckets, each with american/foreign lists:
 //   default — seeded from the baked-in lists, re-seeded on a DEFAULTS_VERSION bump
