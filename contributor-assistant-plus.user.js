@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-07-21a
+// @version      2026-07-21b
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -1183,6 +1183,17 @@ const STORE_KEY = 'contributorLists';
 // are never touched by this, so a user's own additions survive updates.
 const DEFAULTS_VERSION = 2;
 
+const TIMEZONE = 'America/New_York';
+
+// Returns a date string in YYYY-MM-DD format (defaults to now), using the
+// configured timezone.
+function isoDate(d = new Date()) {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: TIMEZONE,
+        dateStyle: 'short'
+    }).format(d);
+}
+
 // The store holds two buckets, each with american/foreign lists:
 //   default — seeded from the baked-in lists, re-seeded on a DEFAULTS_VERSION bump
 //   user    — the user's own additions, only changed via import/clear, always wins
@@ -1292,7 +1303,7 @@ function registerMenuCommands() {
         const blob = new Blob([JSON.stringify(lists.user, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'my-contributor-lists.json';
+        a.download = `my-contributor-lists-${isoDate()}.json`;
         a.click();
         URL.revokeObjectURL(a.href);
     });
