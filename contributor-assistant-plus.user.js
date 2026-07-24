@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-07-21b
+// @version      2026-07-24a
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
@@ -33,7 +33,8 @@
 // Some clients insist on only using stock photos and footage from American contributors. This script exists to help find that, which stock sites do not always make obvious.
 
 // This is actually the selector for the parent of the element containing the contributor name.
-const CONTRIBUTOR_SELECTOR_SHUTTERSTOCK = 'div > div > div > div > div > span > p';
+const CONTRIBUTOR_SELECTOR_SHUTTERSTOCK = 'a[data-automation="ContributorDetails"] > span';
+const CONTRIBUTOR_SELECTOR_SHUTTERSTOCK_ENTERPRISE = 'div > div > div > div > div > span > p';
 const CONTRIBUTOR_SELECTOR_POND5 = '#main > div > div.u-size1of1 > div.ItemDetailV4-itemInfoWrapper.u-bgCodGray.u-colorWhite.has-organicBlueBar.js-itemDetailInfoWrapper > div > div > div > div.ItemDetailV4-itemInfoGrid > div.ItemDetailV4-itemInfoGridHeadingColumn.dsm.ItemDetailV4-itemInfoGridHeadingColumn--video.js-awCustomClick > div.ItemDetailV4-artistAndUsage > a > span.u-text14px.u-linkWhite';
 const CONTRIBUTOR_SELECTOR_ADOBE_STOCK = '#details > div > div > div.row-flex-detailspanel > div.padding-actionpanel > div > div > div > div > div.details-margin-bottom > div';
 const CONTRIBUTOR_SELECTOR_ENVATO = '._l9nSumF > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > span:nth-child(2)';
@@ -1459,7 +1460,10 @@ async function mainAssistant() {
     const domain = window.location.href.split('/')[2];
     let site = '';
     let selector = '';
-    if (domain.includes('shutterstock.com')) {
+    if (domain === 'enterprise.shutterstock.com') {
+        site = 'shutterstock enterprise';
+        selector = CONTRIBUTOR_SELECTOR_SHUTTERSTOCK_ENTERPRISE;
+    } else if (domain.includes('shutterstock.com')) {
         site = 'shutterstock';
         selector = CONTRIBUTOR_SELECTOR_SHUTTERSTOCK;
     } else if (domain.includes('pond5.com')) {
@@ -1517,7 +1521,7 @@ function findContributor(site, selector, contributorEl, contributor) {
                 contributor = contributorEl.innerText.trim();
             }
         }
-    } else if (site === 'adobe stock') {
+    } else if (site === 'shutterstock' || site === 'adobe stock') {
         contributor = contributorEl.children[1].textContent.trim();
     } else if (site === 'istock') {
         contributor = contributorEl.children[2].textContent.trim();

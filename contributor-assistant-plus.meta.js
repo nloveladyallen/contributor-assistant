@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Contributor Assistant+
 // @namespace    http://tampermonkey.net/
-// @version      2026-07-21b
+// @version      2026-07-24a
 // @description  Marks contributors on stock sites as American or foreign, and adds country filters to Pond5 and Envato.
 // @author       You
 // @match        https://*.shutterstock.com/video/*
